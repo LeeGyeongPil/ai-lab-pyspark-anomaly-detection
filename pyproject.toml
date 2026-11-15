@@ -1,0 +1,27 @@
+[project]
+name = "ai-lab-pyspark-anomaly-detection"
+version = "0.1.0"
+description = "PySpark practice demo (part 5/5): find anomalies in sensor numbers with per-group baselines, robust z and KMeans, then measure them with planted answers and pick alert thresholds."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "pyspark==4.3.0",
+    "numpy>=1.23.2",
+]
+
+[project.scripts]
+pyspark-anomaly = "anomaly_lab.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/anomaly_lab"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
