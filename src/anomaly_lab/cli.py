@@ -104,6 +104,33 @@ def _meaning(lang: str, key: str, **values: object) -> None:
     print(f"\n{tr(lang, 'meaning_title')}: {tr(lang, key, **values)}")
 
 
+COMBO_SEEN_MIN = 0.5  # kmeans "sees combos" only if it finds at least half of them
+
+
+def _fmt3(value: float | None) -> str:
+    return "n/a" if value is None else f"{value:.3f}"  # same format as the tables
+
+
+def evaluate_verdict(graded: dict[str, dict]) -> tuple[str, dict[str, str]]:
+    """Pick the evaluate commentary from the graded numbers so it never contradicts the tables."""
+    rz, km = graded["robust_z"], graded["kmeans"]
+    combo = km["by_type"]["combo"]
+    sees_combos = combo is not None and combo >= COMBO_SEEN_MIN
+    # Precision is None when a method raised no alerts; treat that as "not worse".
+    more_alarms = (km["precision"] is not None and rz["precision"] is not None
+                   and km["precision"] < rz["precision"])
+    if sees_combos and more_alarms:
+        key = "evaluate_verdict_both"
+    elif sees_combos:
+        key = "evaluate_verdict_combo"
+    elif more_alarms:
+        key = "evaluate_verdict_alarms"
+    else:
+        key = "evaluate_verdict_neither"
+    values = {"combo": report.pct(combo), "kp": _fmt3(km["precision"]), "rp": _fmt3(rz["precision"])}
+    return key, values
+
+
 def _method_table(lang: str, graded: dict[str, dict]) -> str:
     headers = [tr(lang, k) for k in (
         "col_method", "col_alerts", "col_recall", "col_fpr", "col_precision", "col_undecidable")]
@@ -201,7 +228,10 @@ def step_evaluate(spark: SparkSession, a: argparse.Namespace, lang: str, out: Pa
           r["precision"], r["recall_point"]] for r in curve]))
     path = out / "threshold_curve.csv"
     evaluate.write_curve_csv(curve, path)
-    _meaning(lang, "evaluate_meaning", top=curve[-1]["threshold"], rec=report.pct(curve[-1]["recall_point"]))
+    verdict_key, verdict_values = evaluate_verdict(graded)
+    verdict = tr(lang, verdict_key, **verdict_values)
+    _meaning(lang, "evaluate_meaning", verdict=verdict, top=curve[-1]["threshold"],
+             rec=report.pct(curve[-1]["recall_point"]))
     print(f"\n{tr(lang, 'evaluate_saved', path=path)}")
     df.unpersist()
 
