@@ -1,6 +1,6 @@
 [project]
 name = "ai-lab-pyspark-anomaly-detection"
-version = "0.1.0"
+version = "0.1.1"
 description = "PySpark practice demo (part 5/5): find anomalies in sensor numbers with per-group baselines, robust z and KMeans, then measure them with planted answers and pick alert thresholds."
 readme = "README.md"
 license = { text = "MIT" }
